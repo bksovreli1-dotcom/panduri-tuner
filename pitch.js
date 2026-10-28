@@ -1,0 +1,4 @@
+(function(root){
+function detect(input,rate){let max=Math.min(Math.floor(rate/65),Math.floor(input.length/2)-1),min=Math.max(2,Math.floor(rate/1000)),window=input.length-max,energy=0,mean=0;for(const s of input)mean+=s;mean/=input.length;for(const s of input)energy+=(s-mean)**2;if(Math.sqrt(energy/input.length)<.003)return -1;const d=new Float64Array(max+1);for(let t=1;t<=max;t++){let sum=0;for(let i=0;i<window;i++)sum+=(input[i]-input[i+t])**2;d[t]=sum}let total=0;d[0]=1;for(let t=1;t<=max;t++){total+=d[t];d[t]=total?d[t]*t/total:1}for(let t=min;t<max;t++){if(d[t]<.15){while(t+1<max&&d[t+1]<d[t])t++;let den=d[t-1]-2*d[t]+d[t+1];let shift=Math.abs(den)<1e-12?0:.5*(d[t-1]-d[t+1])/den;let hz=rate/(t+shift);return hz>=65&&hz<=1000?hz:-1}}return -1}
+const api={detect,frequency:m=>440*2**((m-69)/12),cents:(hz,target)=>1200*Math.log2(hz/target)};if(typeof module!=='undefined')module.exports=api;else root.Pitch=api;
+})(globalThis);
