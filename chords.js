@@ -1,9 +1,9 @@
 // Chromatic panduri, low-to-high A3 C#4 E4; each fret is one semitone.
 function chordShape(name){
  const normal=name.replaceAll('♯','#').replaceAll('♭','b');
- const m=/^([A-G])([#b]?)(m|7|m7|maj7)?$/.exec(normal);if(!m)return null;
+ const m=/^([A-G])([#b]?)(m|7|m7|maj7|dim|aug|sus2|sus4)?$/.exec(normal);if(!m)return null;
  const root=({C:0,D:2,E:4,F:5,G:7,A:9,B:11}[m[1]]+(m[2]==='#'?1:m[2]==='b'?-1:0)+12)%12,q=m[3]||'';
- const intervals=q==='m'?[0,3,7]:q==='7'?[0,4,10]:q==='m7'?[0,3,10]:q==='maj7'?[0,4,11]:[0,4,7];
+ const intervals={'':[0,4,7],m:[0,3,7],7:[0,4,10],m7:[0,3,10],maj7:[0,4,11],dim:[0,3,6],aug:[0,4,8],sus2:[0,2,7],sus4:[0,5,7]}[q];
  const tones=intervals.map(n=>(root+n)%12),tuning=[9,1,4];let best=null,score=Infinity;
  for(let a=0;a<=12;a++)for(let b=0;b<=12;b++)for(let c=0;c<=12;c++){
   const frets=[a,b,c],pitches=frets.map((f,i)=>(f+tuning[i])%12);
@@ -36,4 +36,14 @@ if(typeof document!=='undefined'){
  document.addEventListener('click',e=>{const b=e.target.closest('.chord-button');if(b){if(anchor===b&&pinned)hide();else{show(b);pinned=true}}else if(!popup.contains(e.target))hide()});
  document.addEventListener('keydown',e=>{if(e.key==='Escape')hide()});window.addEventListener('scroll',hide,true);window.addEventListener('resize',hide);
  new MutationObserver(()=>{if(anchor&&!anchor.isConnected)hide()}).observe(document.getElementById('song-lyrics'),{childList:true});
+}
+
+const atlasRoots=[['C','დო',''],['C♯','დო დიეზი','Db · რე ბემოლი'],['D','რე',''],['D♯','რე დიეზი','Eb · მი ბემოლი'],['E','მი',''],['F','ფა',''],['F♯','ფა დიეზი','Gb · სოლ ბემოლი'],['G','სოლ',''],['G♯','სოლ დიეზი','Ab · ლა ბემოლი'],['A','ლა',''],['A♯','ლა დიეზი','Bb · სი ბემოლი'],['B','სი','']];
+const atlasQualities=[['','მაჟორი'],['m','მინორი'],['7','დომინანტსეპტაკორდი'],['maj7','დიდი მაჟორული სეპტაკორდი'],['m7','მინორული სეპტაკორდი'],['dim','შემცირებული სამხმოვანება'],['aug','გადიდებული სამხმოვანება'],['sus2','შეჩერებული აკორდი სეკუნდაზე'],['sus4','შეჩერებული აკორდი კვარტაზე']];
+if(typeof module!=='undefined')Object.assign(module.exports,{atlasRoots,atlasQualities});
+if(typeof document!=='undefined'&&document.getElementById('chord-grid')){
+ const grid=document.getElementById('chord-grid'),search=document.getElementById('chord-search'),quality=document.getElementById('chord-quality');
+ for(const [suffix,name]of atlasQualities){const o=document.createElement('option');o.value=suffix;o.textContent=name;quality.append(o)}
+ function renderAtlas(){grid.replaceChildren();let count=0;const query=search.value.toLocaleLowerCase('ka').replaceAll('#','♯').replaceAll('♭','b').trim();for(const [root,name,alias]of atlasRoots){const group=document.createElement('details');group.className='atlas-group';const summary=document.createElement('summary');const heading=document.createElement('span');heading.textContent=name+' — '+root;const total=document.createElement('small');const mark=document.createElement('span');mark.className='atlas-toggle';mark.setAttribute('aria-hidden','true');mark.textContent='+';summary.append(heading,total,mark);const cards=document.createElement('div');cards.className='atlas-group-cards';group.append(summary,cards);group.addEventListener('toggle',()=>{mark.textContent=group.open?'−':'+'});let groupCount=0;for(const [suffix,type]of atlasQualities){const symbol=root+suffix,label=name+' '+type,flat=alias?alias.split(' · ')[0]+suffix:'';if(quality.value!=='all'&&quality.value!==suffix)continue;if(query&&!(symbol+' '+label+' '+flat+' '+alias).toLocaleLowerCase('ka').includes(query))continue;const shape=chordShape(symbol);const card=document.createElement('article');card.className='atlas-card';const button=document.createElement('button');button.className='chord-button';button.textContent=symbol;button.setAttribute('aria-label',symbol+' — '+label+' — ფანდურის დიაგრამა');button.setAttribute('aria-expanded','false');const title=document.createElement('h3');title.textContent=label;const alternative=document.createElement('small');alternative.textContent=alias?'იგივე ბგერა: '+flat+' · '+alias.split(' · ')[1]:root+' · '+name;const frets=document.createElement('p');frets.className='frets';frets.textContent=shape?shape.frets.join(' · '):'—';frets.setAttribute('aria-label','ლადები A, C♯, E სიმებზე: '+(shape?shape.frets.join(', '):'მიუწვდომელია'));card.append(button,title,alternative,frets);if(shape?.omittedFifth){const note=document.createElement('small');note.textContent='სამსიმიანი ფორმა · კვინტის გარეშე';card.append(note)}cards.append(card);count++;groupCount++}if(groupCount){total.textContent=groupCount+' აკორდი';group.open=Boolean(query)||quality.value!=='all';grid.append(group)}}document.getElementById('chord-count').textContent=count?count+' აკორდი / 108':'აკორდი ვერ მოიძებნა. სცადე სხვა დასახელება.';}
+ search.addEventListener('input',renderAtlas);quality.addEventListener('change',renderAtlas);renderAtlas();
 }
